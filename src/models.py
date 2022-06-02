@@ -185,8 +185,8 @@ class Poll(db.Model):
 
     # info struct
     #info = {
-    #   question: 'Is react-polls useful?', 
-    #   pollAnswers: [
+    #   "question": 'Is react-polls useful?', 
+    #   "pollAnswers": [
     #       {option: 'Yes', votes: 8},
     #       {option: 'No', votes: 10}
     #   ]
@@ -196,6 +196,19 @@ class Poll(db.Model):
 
     def __init__(self, **kwargs):
         self.info = kwargs['info']
+        self.project_id = kwargs['project_id']
+
+    @classmethod
+    def create(cls, **kwargs):
+        element = cls(**kwargs)
+        db.session.add(element)
+        try: 
+            db.session.commit()
+        except Exception as error:
+            print(error.args)
+            db.session.rollback()
+            return False
+        return element
     
     def serialize(self):
         return {
@@ -208,18 +221,38 @@ class FileID(db.Model):
     __tablename__ = 'fileID'
     # data
     id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(120), unique=True, nullable=False)
         # foreign key to project
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
         # foreign key to project version
     project_version_id = db.Column(db.Integer, db.ForeignKey('projectVersion.id'))
 
+    def __init__(self, **kwargs):
+        self.filename = kwargs["filename"]
+        self.project_id = kwargs.get('project_id')
+        self.project_version_id = kwargs.get('project_version_id')
+
+    @classmethod
+    def create(cls, **kwargs):
+        element = cls(**kwargs)
+        db.session.add(element)
+        try: 
+            db.session.commit()
+        except Exception as error:
+            print(error.args)
+            db.session.rollback()
+            return False
+        return element
+
     def serialize(self):
         return_dict = {
             "id": self.id,
-            "project_id": self.project_id
+            "filename": self.filename
         }
 
         if self.project_id:
             return_dict["project_id"] = id.project_id
+        if self.project_version_id:
+            return_dict["project_version_id"] = self.project_version_id
 
         return return_dict

@@ -1,24 +1,35 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
-import os
-from flask import Flask, request, jsonify, url_for
+import os, uuid
+from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Artist, Project, ProjectVersion, FileID, Poll
 #from models import Person
 
+# information for the files
+#UPLOAD_FOLDER = 'F:\\Projects\\SI_project_backend\\src\\\saved_uploads'
+UPLOAD_FOLDER = 'saved_uploads'
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STRING')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
 setup_admin(app)
+
+# verify id the file is from an allowed extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -82,7 +93,6 @@ def project():
             data = request.json
             # get the artist by username and password
             project = Project.query.filter_by(id=data["id"]).first()
-            print(project)
             if not project:
                 return jsonify({"msg": "Project with the id established does not exist"}), 400
             return jsonify({"project": project.serialize()}), 200
@@ -117,6 +127,77 @@ def project_version():
             return jsonify({"project_version": project_version.serialize()}), 200
         except:
             return jsonify({"msg": "Error with the request data"}), 400
+
+@app.route('/poll', methods=['GET', 'POST'])
+def poll():
+    '''
+        POST: create the poll based on the artist id and info
+        GET: get the poll based on the id
+    '''
+    # request of type POST
+    if request.method == 'POST':
+        try:
+            data = request.json
+            # create the user
+            poll = Poll.create(**data)
+            if not isinstance(poll, Poll):
+                return jsonify({"msg": "Poll could not be created"}), 500
+            return jsonify({"msg": "Poll created successfully"}), 201
+        except:
+            return jsonify({"msg": "Error with the request data"}), 400
+    # request of type GET
+    elif request.method == 'GET':
+        try:
+            data = request.json
+            # get the artist by username and password
+            poll = Poll.query.filter_by(id=data["id"]).first()
+            if not poll:
+                return jsonify({"msg": "Poll with the id established does not exist"}), 400
+            return jsonify({"poll": poll.serialize()}), 200
+        except:
+            return jsonify({"msg": "Error with the request data"}), 400
+
+@app.route('/file', methods=['POST'])
+def file_endpoint():
+    '''
+        POST: save the file based on the project id and the 
+    '''
+    # request of type POST
+    if request.method == 'POST':
+        try:
+            # check if the post request has the file part
+            if 'file' not in request.files:
+                return jsonify({"msg": "No file passed"}), 400
+            file = request.files['file']
+            # If the user does not select a file, the browser submits an
+            # empty file without a filename.
+            if file.filename == '':
+                return jsonify({"msg": "Empty file passed"}), 400
+            if file and allowed_file(file.filename):
+                # create the fileId object
+                data = request.form.copy()
+                # save the filename and the unique id
+                data["filename"] = file.filename
+                # create the user
+                file_id = FileID.create(**data)
+                if not isinstance(file_id, FileID):
+                    return jsonify({"msg": "File could not be saved"}), 500
+                # if the object is created the file can be saved
+                filename = secure_filename(file.filename)
+                path_for_upload_folder = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
+                file.save(os.path.join(path_for_upload_folder, filename))
+                
+                return jsonify({"msg": "File saved successfully"}), 201
+        except BaseException as err:
+            print(err)
+            return jsonify({"msg": "Error with the request data"}), 400
+
+@app.route('/uploads/<path:filename>', methods=['GET'])
+def download_file(filename):
+    path_for_upload_folder = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
+    return send_from_directory(
+        path_for_upload_folder, filename
+    )
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
