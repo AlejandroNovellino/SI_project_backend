@@ -55,7 +55,7 @@ def artist():
             artist = Artist.create(**data)
             if not isinstance(artist, Artist):
                 return jsonify({"msg": "Artist could not be created"}), 500
-            return jsonify({"msg": "Artist created successfully"}), 201
+            return jsonify({"artist": artist.serialize()}), 201
         except:
             return jsonify({"msg": "Error with the request data"}), 400
     # request of type GET
@@ -66,6 +66,23 @@ def artist():
             artist = Artist.query.filter_by(username=data["username"], password=data["password"]).first()
             if not artist:
                 return jsonify({"msg": "Combination is not valid"}), 400
+            return jsonify({"artist": artist.serialize()}), 200
+        except:
+            return jsonify({"msg": "Error with the request data"}), 404
+
+@app.route('/artist/log-in', methods=['POST'])
+def artistGet():
+    '''
+        POST: get the artist based on the username and password combination
+    '''
+    # request of type POST
+    if request.method == 'POST':
+        try:
+            data = request.json
+            # get the artist by username and password
+            artist = Artist.query.filter_by(username=data["username"], password=data["password"]).first()
+            if not artist:
+                return jsonify({"msg": "Combination is not valid"}), 404
             return jsonify({"artist": artist.serialize()}), 200
         except:
             return jsonify({"msg": "Error with the request data"}), 400
@@ -201,5 +218,5 @@ def download_file(filename):
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
-    PORT = int(os.environ.get('PORT', 3000))
+    PORT = int(os.environ.get('PORT', 5040))
     app.run(host='0.0.0.0', port=PORT, debug=False)

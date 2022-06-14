@@ -84,8 +84,8 @@ class Artist(User, db.Model):
     def serialize(self):
         return {
             **super().serialize(),
-            "first_name": self.first_name,
-            "last_name": self.last_name,
+            "firstName": self.first_name,
+            "lastName": self.last_name,
             "age": self.age,
             "nationality": self.nationality,
             "bio": self.nationality
