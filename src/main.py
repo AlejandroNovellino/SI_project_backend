@@ -101,7 +101,8 @@ def project():
             project = Project.create(**data)
             if not isinstance(project, Project):
                 return jsonify({"msg": "Project could not be created"}), 500
-            return jsonify({"msg": "Project created successfully"}), 201
+            artist = Artist.query.filter_by(id=data["artist_id"]).first()
+            return jsonify({"artist": artist.serialize()}), 201
         except:
             return jsonify({"msg": "Error with the request data"}), 400
     # request of type GET
@@ -130,7 +131,9 @@ def project_version():
             project_version = ProjectVersion.create(**data)
             if not isinstance(project_version, ProjectVersion):
                 return jsonify({"msg": "Project version could not be created"}), 500
-            return jsonify({"msg": "Project version created successfully"}), 201
+
+            artist = Artist.query.filter_by(id=data["artist_id"]).first()
+            return jsonify({"artist": artist.serialize()}), 201
         except:
             return jsonify({"msg": "Error with the request data"}), 400
     # request of type GET
@@ -159,7 +162,8 @@ def poll():
             poll = Poll.create(**data)
             if not isinstance(poll, Poll):
                 return jsonify({"msg": "Poll could not be created"}), 500
-            return jsonify({"msg": "Poll created successfully"}), 201
+            artist = Artist.query.filter_by(id=data["artist_id"]).first()
+            return jsonify({"artist": artist.serialize()}), 201
         except:
             return jsonify({"msg": "Error with the request data"}), 400
     # request of type GET

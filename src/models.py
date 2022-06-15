@@ -82,7 +82,7 @@ class Artist(User, db.Model):
         return '<User %r>' % self.username
 
     def serialize(self):
-        return {
+        return_dict = {
             **super().serialize(),
             "firstName": self.first_name,
             "lastName": self.last_name,
@@ -90,6 +90,11 @@ class Artist(User, db.Model):
             "nationality": self.nationality,
             "bio": self.nationality
         }
+
+        if self.projects:
+            return_dict["projects"] = list(map(lambda project: project.serialize(), self.projects))
+
+        return return_dict
 
 class Project(db.Model):
     __tablename__ = 'project'
@@ -127,13 +132,21 @@ class Project(db.Model):
         return element
 
     def serialize(self):
-        return {
+        return_dict = {
             "id": self.id,
             "artist_id": self.artist_id,
             "tittle": self.tittle,
             "header": self.header,
             "description": self.description 
         }
+
+        if self.versions:
+            return_dict["versions"] = list(map(lambda version: version.serialize(), self.versions))
+
+        if self.polls:
+            return_dict["polls"] = list(map(lambda poll: poll.serialize(), self.polls))
+
+        return return_dict
 
 class ProjectVersion(db.Model):
     __tablename__ = 'projectVersion'
