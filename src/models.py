@@ -88,7 +88,7 @@ class Artist(User, db.Model):
             "lastName": self.last_name,
             "age": self.age,
             "nationality": self.nationality,
-            "bio": self.nationality
+            "bio": self.bio
         }
 
         if self.projects:
@@ -145,6 +145,9 @@ class Project(db.Model):
 
         if self.polls:
             return_dict["polls"] = list(map(lambda poll: poll.serialize(), self.polls))
+
+        if self.files:
+            return_dict["files"] = list(map(lambda fileId: fileId.serialize(), self.files))
 
         return return_dict
 
@@ -264,7 +267,7 @@ class FileID(db.Model):
         }
 
         if self.project_id:
-            return_dict["project_id"] = id.project_id
+            return_dict["project_id"] = self.project_id
         if self.project_version_id:
             return_dict["project_version_id"] = self.project_version_id
 

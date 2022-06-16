@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Artist, Project, ProjectVersion, FileID, Poll
@@ -85,7 +86,7 @@ def artistGet():
                 return jsonify({"msg": "Combination is not valid"}), 404
             return jsonify({"artist": artist.serialize()}), 200
         except:
-            return jsonify({"msg": "Error with the request data"}), 400
+            return jsonify({"msg": "Error"}), 500
 
 @app.route('/project', methods=['GET', 'POST'])
 def project():
@@ -186,6 +187,8 @@ def file_endpoint():
     # request of type POST
     if request.method == 'POST':
         try:
+            print(request.json)
+            print(request.files)
             # check if the post request has the file part
             if 'file' not in request.files:
                 return jsonify({"msg": "No file passed"}), 400
@@ -208,7 +211,8 @@ def file_endpoint():
                 path_for_upload_folder = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
                 file.save(os.path.join(path_for_upload_folder, filename))
                 
-                return jsonify({"msg": "File saved successfully"}), 201
+                artist = Artist.query.filter_by(id=data["artist_id"]).first()
+                return jsonify({"artist": artist.serialize()}), 201
         except BaseException as err:
             print(err)
             return jsonify({"msg": "Error with the request data"}), 400
