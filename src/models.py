@@ -43,7 +43,9 @@ class Artist(User, db.Model):
     bio = db.Column(db.Text, unique=False, nullable=True)
     # one to many relationships
         # list of projects
-    projects = db.relationship('Project', backref='project')
+    projects = db.relationship('Project', backref='artist')
+        #list of comments
+    comments = db.relationship('Comment', backref='artist')
 
     __mapper_args__ = {
         'polymorphic_identity':'artist'
@@ -94,6 +96,9 @@ class Artist(User, db.Model):
         if self.projects:
             return_dict["projects"] = list(map(lambda project: project.serialize(), self.projects))
 
+        if self.comments:
+            return_dict["comments"] = list(map(lambda comment: comment.serialize(), self.comments))
+
         return return_dict
 
 class Project(db.Model):
@@ -112,6 +117,8 @@ class Project(db.Model):
     versions = db.relationship('ProjectVersion', backref='project')
         #list of polls
     polls = db.relationship('Poll', backref='project')
+        #list of comments
+    comments = db.relationship('Comment', backref='project')
 
     def __init__(self, **kwargs):
         self.tittle = kwargs['tittle']
@@ -149,6 +156,45 @@ class Project(db.Model):
         if self.files:
             return_dict["files"] = list(map(lambda fileId: fileId.serialize(), self.files))
 
+        if self.comments:
+            return_dict["comments"] = list(map(lambda comment: comment.serialize(), self.comments))
+
+        return return_dict
+
+class Comment(db.Model):
+    __tablename__ = 'comment'
+    # data
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, unique=False, nullable=False)
+    # foreign key to artist
+    artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'))
+    # foreign key to project
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+
+    def __init__(self, **kwargs):
+        self.text = kwargs['text']
+        self.artist_id = kwargs["artist_id"]
+        self.project_id = kwargs["project_id"]
+
+    @classmethod
+    def create(cls, **kwargs):
+        element = cls(**kwargs)
+        db.session.add(element)
+        try: 
+            db.session.commit()
+        except Exception as error:
+            print(error.args)
+            db.session.rollback()
+            return False
+        return element
+
+    def serialize(self):
+        return_dict = {
+            "id": self.id,
+            "text": self.text,
+            "artist_id": self.artist_id,
+            "project_id": self.project_id,
+        }
         return return_dict
 
 class ProjectVersion(db.Model):

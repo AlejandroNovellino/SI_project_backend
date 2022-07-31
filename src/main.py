@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Artist, Project, ProjectVersion, FileID, Poll
+from models import db, User, Artist, Project, ProjectVersion, FileID, Poll, Comment
 #from models import Person
 
 # information for the files
@@ -118,6 +118,22 @@ def project():
         except:
             return jsonify({"msg": "Error with the request data"}), 400
 
+@app.route('/projects', methods=['GET'])
+def projects():
+    '''
+        GET: get all the projects
+    '''
+    # request of type GET
+    if request.method == 'GET':
+        try:
+            # get all the projects
+            projects = Project.query.all()
+            if not project:
+                return jsonify({"msg": "Cannot get all the projects"}), 400
+            return jsonify({"projects": [project.serialize() for project in projects]}), 200
+        except:
+            return jsonify({"msg": "Error with the request data"}), 400
+
 @app.route('/project-version', methods=['GET', 'POST'])
 def project_version():
     '''
@@ -149,11 +165,12 @@ def project_version():
         except:
             return jsonify({"msg": "Error with the request data"}), 400
 
-@app.route('/poll', methods=['GET', 'POST'])
+@app.route('/poll', methods=['GET', 'POST', 'PUT'])
 def poll():
     '''
         POST: create the poll based on the artist id and info
         GET: get the poll based on the id
+        PUT: update a product
     '''
     # request of type POST
     if request.method == 'POST':
@@ -176,6 +193,40 @@ def poll():
             if not poll:
                 return jsonify({"msg": "Poll with the id established does not exist"}), 400
             return jsonify({"poll": poll.serialize()}), 200
+        except:
+            return jsonify({"msg": "Error with the request data"}), 400
+    # request of type PUT
+    elif request.method == 'PUT':
+        try:
+            data = request.json
+            print(data)
+            poll = Poll.query.get(data["id"])
+
+            # update the poll
+            poll.info = data["info"]
+
+            db.session.commit()
+
+            return jsonify({"msg": "Poll updated successfully"}), 202
+        except BaseException as e:
+            print(e)
+            return jsonify({"msg": "Error with the request data"}), 400
+
+@app.route('/comment', methods=['POST'])
+def comment():
+    '''
+        POST: create a comment
+    '''
+    # request of type POST
+    if request.method == 'POST':
+        try:
+            data = request.json
+            # create the comment
+            comment = Comment.create(**data)
+            if not isinstance(comment, Comment):
+                return jsonify({"msg": "Comment could not be created"}), 500
+            artist = Artist.query.filter_by(id=data["artist_id"]).first()
+            return jsonify({"artist": artist.serialize()}), 201
         except:
             return jsonify({"msg": "Error with the request data"}), 400
 
